@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WEBXPAY Reconciliation</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/style.css" />
+
+  <!-- ✅ Inline loader styles (shows next to Refresh) -->
+  <style>
+    .inline-loading {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .inline-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #111827;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>WEBXPAY Reconciliation</h1>
+          <div class="sub">
+            Secure transaction matching • Bank vs Portal • Carry-forward enabled
+          </div>
+        </div>
+      </div>
+
+      <div class="actions top-actions">
+        <a class="btn" href="/download">Download Unreconciled</a>
+
+        <form action="/undo_last" method="post" style="margin:0">
+          <button type="submit" class="btn ghost"
+            onclick="return confirm('Undo the LAST upload/reconciliation run? This will revert DB changes from that run.')">
+            Undo Last Upload
+          </button>
+        </form>
+
+        <form action="/undo_today" method="post" style="margin:0">
+          <button type="submit" class="btn ghost"
+            onclick="return confirm('Undo ALL runs done today? This will revert DB changes from every run made today.')">
+            Undo Today's Uploads
+          </button>
+        </form>
+
+        <form action="/logout" method="get" style="margin:0">
+          <button type="submit" class="btn ghost">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Main Card -->
+    <section class="card">
+
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Run Reconciliation</h2>
+          <p class="card-desc">
+            Upload portal reports and/or bank statements to identify unmatched transactions.
+          </p>
+        </div>
+
+        <div class="badges">
+          <div class="badge">
+            <span>Open Portal</span>
+            <b>{{ stats.open_portal }}</b>
+          </div>
+          <div class="badge">
+            <span>Open Bank</span>
+            <b>{{ stats.open_bank }}</b>
+          </div>
+          <div class="badge">
+            <span>Last Run</span>
+            <b>{{ stats.last_run or "—" }}</b>
+          </div>
+        </div>
+      </div>
+
+      {% if message %}
+      <div class="msg">
+        <div class="msg-dot"></div>
+        <div><strong>Status:</strong> {{ message }}</div>
+      </div>
+      {% endif %}
+
+      <!-- Upload Form -->
+      <form action="/reconcile" method="post" enctype="multipart/form-data">
+
+        <div class="grid">
+
+          <!-- Portal -->
+          <div class="field">
+            <label>Portal Reports</label>
+            <div class="hint">
+              Upload portal file(s).
+            </div>
+            <input type="file" name="portal_files" multiple accept=".xlsx,.xls" />
+
+            <label style="margin-top:12px">Portal Mapping (optional)</label>
+            <textarea class="text" name="portal_prompt" rows="4"
+              placeholder="Example: MID is 'Merchant ID', TID is 'Terminal', amount is 'Amount'.">
+            </textarea>
+          </div>
+
+          <!-- Bank -->
+          <div class="field">
+            <label>Bank Statements</label>
+            <div class="hint">
+              Upload bank statement(s).
+            </div>
+            <input type="file" name="bank_files" multiple accept=".xlsx,.xls" />
+
+            <label style="margin-top:12px">Bank Mapping (optional)</label>
+            <textarea class="text" name="bank_prompt" rows="4"
+              placeholder="Example: Merchant ID is 'MERCHANT', amount is 'Gross Sales'.">
+            </textarea>
+          </div>
+
+        </div>
+
+        <div class="actions">
+          <button type="submit">Run Reconciliation</button>
+          <a class="btn ghost" href="/">Refresh</a>
+
+          <!-- ✅ Inline loading indicator (shows next to Refresh) -->
+          <div class="inline-loading" id="inlineLoading">
+            <div class="inline-spinner"></div>
+            <span>Processing…</span>
+          </div>
+        </div>
+      </form>
+
+      <hr />
+
+      <div class="small">
+        <strong>Match Logic:</strong>
+        MID + TID + Card (first & last 4) + Amount (2 decimals)
+        <br />
+        <strong>Carry-forward:</strong>
+        Unreconciled records persist until matched in future uploads.
+        <br />
+        <strong>AI Mapping:</strong>
+        Auto column mapping enabled when <code>OPENAI_API_KEY</code> is configured.
+      </div>
+    </section>
+
+    <!-- Danger Zone -->
+    <section class="footer">
+      <form action="/reset" method="post">
+        <button class="danger" type="submit"
+          onclick="return confirm('This will permanently clear ALL unreconciled records. Continue?')">
+          Reset Reconciliation Database
+        </button>
+      </form>
+
+      <div class="foot-note">
+        Tip: Upload multiple days together to reduce false unreconciled results.
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ✅ JS: show loader for ANY form submit (reconcile + undo + reset) -->
+  <script>
+    function showInlineLoading() {
+      const el = document.getElementById("inlineLoading");
+      if (el) el.style.display = "flex";
+    }
+
+    // Show loader for ALL form submits (reconcile, undo_last, undo_today, reset)
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        showInlineLoading();
+      });
+    });
+  </script>
+
+</body>
+</html>

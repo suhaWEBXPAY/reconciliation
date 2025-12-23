@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login • WEBXPAY Reconciliation</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/style.css" />
+
+  <style>
+    .auth-wrap{max-width:520px;margin:40px auto;padding:0 18px}
+    .row{display:grid;gap:12px;margin-top:16px}
+    .inp{width:100%;padding:12px 14px;border:1.5px solid var(--border-2);border-radius:16px;background:#fff;outline:none}
+    .inp:focus{border-color: rgba(16,24,40,.35);box-shadow:0 0 0 4px rgba(242,255,92,.35)}
+    .auth-actions{display:flex;gap:10px;align-items:center;margin-top:16px}
+    .auth-links{margin-top:14px;color:var(--muted);font-size:13px}
+    .auth-links a{color:var(--text);font-weight:600}
+  </style>
+</head>
+
+<body>
+  <div class="auth-wrap">
+
+    <!-- Brand -->
+    <header class="header" style="margin-bottom:18px">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>WEBXPAY Reconciliation</h1>
+          <div class="sub">
+            Secure login to access your private reconciliation workspace
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Card -->
+    <section class="card">
+      <div class="card-head" style="margin-bottom:4px">
+        <div>
+          <h2 class="card-title">Login</h2>
+          <p class="card-desc">
+            Sign in to continue managing your unreconciled transactions.
+          </p>
+        </div>
+      </div>
+
+      {% if message %}
+      <div class="msg" style="margin-top:14px">
+        <div class="msg-dot"></div>
+        <div><strong>Status:</strong> {{ message }}</div>
+      </div>
+      {% endif %}
+
+      <form action="/login" method="post">
+        <div class="row">
+          <div>
+            <label>Email address</label>
+            <input class="inp" name="email" type="email" required autocomplete="email" />
+          </div>
+
+          <div>
+            <label>Password</label>
+            <input class="inp" name="password" type="password" required autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="auth-actions">
+          <button type="submit">Login</button>
+          <a class="btn ghost" href="/signup">Create account</a>
+        </div>
+
+        <div class="auth-links">
+          Don’t have an account? <a href="/signup">Sign up here</a>.
+        </div>
+      </form>
+    </section>
+
+  </div>
+</body>
+</html>
